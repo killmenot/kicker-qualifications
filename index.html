@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kicker Qualification</title>
+  </head>
+  <body>
+    <div id="players"></div>
+    <div id="games"></div>
+    <script src="bower_components/requirejs/require.js" data-main="app/main"></script>
+    <script id="players-template" type="text/x-handlebars-template">
+      <ul>
+        {{#each this}}
+          <li>
+            <h3>{{name}}</h3>
+            <ol>
+              {{#each games}}
+                <li>Home: {{home.name}} vs Visitor {{visitor.name}} </li>
+              {{/each}}
+            </ol>
+          </li>
+        {{/each}}
+      </ul>
+    </script>
+    <script id="games-template" type="text/x-handlebars-template"></script>
+  </body>
+</html>
