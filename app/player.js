@@ -30,7 +30,6 @@ define('player', function (require) {
       .value();
 
     return !!_.find(playerNames, function (playerName) { return playerName === player.name; });
-    
   };
 
   return Player;
