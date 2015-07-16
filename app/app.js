@@ -3,9 +3,16 @@
 define('app', function (require) {
   var _ = require('underscore');
   var handlebars = require('handlebars');
+  var moment = require('moment');
+
+  require('moment-duration-format');
+
   var config = require('./config');
   var Player = require('./player');
   var Game = require('./game');
+  var Slot = require('./slot');
+
+  // move to utils
   var logger = require('./logger');
 
   var that = {};
@@ -15,6 +22,8 @@ define('app', function (require) {
   that.games = [];
   that.cache = {};
   that.templates = {};
+  that.tours = [];
+  that.slots = [];
 
   var createPlayers = function () {
     _.each(config.players, function (player) {
@@ -81,6 +90,8 @@ define('app', function (require) {
         })
       );
 
+      that.tours.push(tour);
+
       // Calculating games between players
       for (var i = 0; i < players.length; i++) {
         home = players[i];
@@ -133,7 +144,9 @@ define('app', function (require) {
           participants.push(home.name, visitor.name);
 
           game = new Game(home, visitor);
+          game.setNumber(that.games.length + 1);
           game.setTour(tour);
+
           that.games.push(game);
           break;
         }
@@ -141,21 +154,9 @@ define('app', function (require) {
     });
   };
 
-  var main = function () {
-    logger.enable(config.enableAppLogs);
-    logger.enableStackTrace(config.enableStackTrace);
-    logger.setLevelsCategories(config.applicationLevelsCategories);
-
-    buildCache();
-    buildTemplates();
-    createPlayers();
-
-    // Process qualification games
-    var tours = _.range(1, config.count + 1);
-    process(tours, that.players);
-
-    // Do we need extra tour?
+  var processExtraTours = function () {
     var players = _.filter(that.players, function (player) { return player.games.length < config.count; });
+    
     if (players.length > 0) {
       logger.log('info', 'application', 'Extra tour needed');
       logger.log('info', 'application', 'Players: ', _.map(players,
@@ -172,6 +173,82 @@ define('app', function (require) {
       );
       process([config.count + 1], players);
     }
+  };
+
+  var createSlots = function () {
+    var slot,
+      start = config.startTime - config.gameLength;
+
+    that.games.forEach(function (game, n) {
+      if (n % config.tablesCount === 0) {
+        start += config.gameLength;
+      }
+
+      slot = new Slot();
+      slot.setTableNumber(n % config.tablesCount + 1);
+      slot.setTime(moment.duration(start, 'seconds').format("h:mm"));
+
+      that.slots.push(slot);
+    });
+  };
+
+  var assignSlots = function () {
+    var shuffledGames = [];
+    that.tours.forEach(function (tour) {
+      var games = _.filter(that.games, function (game) {
+        return game.getTour() === tour;
+      });
+
+      games = _.chain(games)
+        .map(function (game, n) { return n; })
+        .shuffle()
+        .map(function (n) { return games[n]; })
+        .value();
+
+      Array.prototype.push.apply(shuffledGames, games);
+    });
+
+    shuffledGames.forEach(function (game, n) {
+      game.setSlot(that.slots[n]);
+    });
+
+    //   _.chain(games)
+    //     .map(function (game, n) { return n; })
+    //     .shuffle()
+    //     .map(function (n) { return games[n]; })
+    //     .each(function (game, n) {
+    //       game.setTableNumber(n % config.tablesCount + 1);
+    //     })
+    //     .value()
+    // });
+    // _.chain(that.games)
+    //   .map(function (game, n) { return n; })
+    //   .shuffle()
+    //   .map(function (n) { return that.games[n]; })
+    //   .each(function (game, n) {
+    //     console.log(game.getNumber());
+    //     game.setTableNumber(n % config.tablesCount + 1);
+    //   })
+  };
+
+  var main = function () {
+    logger.enable(config.enableAppLogs);
+    logger.enableStackTrace(config.enableStackTrace);
+    logger.setLevelsCategories(config.applicationLevelsCategories);
+
+    buildCache();
+    buildTemplates();
+    createPlayers();
+
+    // Process qualification games
+    var tours = _.range(1, config.count + 1);
+    process(tours, that.players);
+
+    // Do we need extra tour?
+    processExtraTours();
+
+    createSlots();
+    assignSlots();
 
     renderPlayers();
     renderGames();
