@@ -26,7 +26,7 @@ define('app', function (require) {
   that.slots = [];
 
   var createPlayers = function () {
-    _.each(config.players, function (player) {
+    _.each(_.shuffle(config.players), function (player) {
       that.players.push(new Player(player));
     });
   };
@@ -211,24 +211,6 @@ define('app', function (require) {
     shuffledGames.forEach(function (game, n) {
       game.setSlot(that.slots[n]);
     });
-
-    //   _.chain(games)
-    //     .map(function (game, n) { return n; })
-    //     .shuffle()
-    //     .map(function (n) { return games[n]; })
-    //     .each(function (game, n) {
-    //       game.setTableNumber(n % config.tablesCount + 1);
-    //     })
-    //     .value()
-    // });
-    // _.chain(that.games)
-    //   .map(function (game, n) { return n; })
-    //   .shuffle()
-    //   .map(function (n) { return that.games[n]; })
-    //   .each(function (game, n) {
-    //     console.log(game.getNumber());
-    //     game.setTableNumber(n % config.tablesCount + 1);
-    //   })
   };
 
   var main = function () {
