@@ -1,4 +1,5 @@
 requirejs.config({
+  urlArgs: "v=" + (new Date()).getTime(),
     baseUrl: '/app',
     paths: {
         'jquery': '/bower_components/jquery/dist/jquery.min',
